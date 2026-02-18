@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.infrastructure.database import Base
+from app.infrastructure.memo.db.database import Base
 
 TEST_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL",

@@ -1,11 +1,11 @@
 import pytest
 
-from app.domain.ai_client_interface import (
+from app.domain.memo.entities.memo import Memo
+from app.domain.memo.services.ai_client import (
     IAIClient,
     MemoAnalysisResult,
     SearchResult,
 )
-from app.domain.models import Memo
 
 
 class StubAIClient(IAIClient):

@@ -2,9 +2,11 @@ from uuid import uuid4
 
 import pytest
 
-from app.domain.repository_interface import IMemoRepository
-from app.infrastructure.in_memory_memo_repository import InMemoryMemoRepository
-from app.usecase.memo_usecase import MemoUsecase
+from app.application.memo.memo_usecase import MemoUsecase
+from app.domain.memo.repositories.memo_repository import IMemoRepository
+from app.infrastructure.memo.db.repositories.in_memory_memo_repository import (
+    InMemoryMemoRepository,
+)
 from tests.conftest import FailingAIClient, StubAIClient
 
 

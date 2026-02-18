@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from app.domain.models import Memo
+from app.domain.memo.entities.memo import Memo
 
 
 @pytest.mark.unit
