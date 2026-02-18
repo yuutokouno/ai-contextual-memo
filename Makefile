@@ -1,4 +1,4 @@
-.PHONY: install dev run test lint format check
+.PHONY: install dev run test test-unit test-integration test-cov lint format check
 
 install:
 	uv sync
@@ -11,6 +11,15 @@ run:
 
 test:
 	uv run pytest -v
+
+test-unit:
+	uv run pytest -v -m unit
+
+test-integration:
+	uv run pytest -v -m integration
+
+test-cov:
+	uv run pytest --cov=app --cov-report=term-missing --cov-report=html
 
 lint:
 	uv run ruff check .
