@@ -3,8 +3,10 @@ from uuid import uuid4
 import pytest
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.domain.models import Memo
-from app.infrastructure.postgres_memo_repository import PostgresMemoRepository
+from app.domain.memo.entities.memo import Memo
+from app.infrastructure.memo.db.repositories.memo_repository_impl import (
+    PostgresMemoRepository,
+)
 
 
 @pytest.fixture

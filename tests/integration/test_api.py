@@ -2,9 +2,11 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.infrastructure.postgres_memo_repository import PostgresMemoRepository
-from app.presentation.main import app, get_memo_usecase
-from app.usecase.memo_usecase import MemoUsecase
+from app.application.memo.memo_usecase import MemoUsecase
+from app.infrastructure.memo.db.repositories.memo_repository_impl import (
+    PostgresMemoRepository,
+)
+from app.presentation.memo.api.memo_api import app, get_memo_usecase
 from tests.conftest import FailingAIClient, StubAIClient
 
 
@@ -56,7 +58,6 @@ class TestCreateMemoAPI:
 
     def test_contentが空文字でも作成できる(self, client: TestClient) -> None:
         response = client.post("/memos", json={"content": ""})
-        # Pydantic allows empty string for str type
         assert response.status_code == 201
 
     def test_contentフィールドがない場合は422を返す(self, client: TestClient) -> None:
