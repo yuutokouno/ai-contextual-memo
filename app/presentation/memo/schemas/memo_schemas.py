@@ -16,6 +16,10 @@ class MemoResponse(BaseModel):
     created_at: datetime
 
 
+class UpdateMemoRequest(BaseModel):
+    content: str
+
+
 class SearchRequest(BaseModel):
     query: str
 

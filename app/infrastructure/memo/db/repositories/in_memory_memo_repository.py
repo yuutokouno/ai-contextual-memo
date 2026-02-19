@@ -18,3 +18,9 @@ class InMemoryMemoRepository(IMemoRepository):
 
     def get_by_id(self, memo_id: UUID) -> Memo | None:
         return self._storage.get(memo_id)
+
+    def delete(self, memo_id: UUID) -> bool:
+        if memo_id in self._storage:
+            del self._storage[memo_id]
+            return True
+        return False

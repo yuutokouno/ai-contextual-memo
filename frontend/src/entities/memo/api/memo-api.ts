@@ -12,6 +12,15 @@ export const memoApi = {
     return data;
   },
 
+  update: async (id: string, content: string): Promise<Memo> => {
+    const { data } = await apiClient.patch<Memo>(`/memos/${id}`, { content });
+    return data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/memos/${id}`);
+  },
+
   search: async (query: string): Promise<SearchResult> => {
     const { data } = await apiClient.post<SearchResult>("/memos/search", {
       query,

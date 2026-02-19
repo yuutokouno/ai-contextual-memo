@@ -1,4 +1,6 @@
-from fastapi import Depends, FastAPI
+from uuid import UUID
+
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.application.memo.memo_usecase import MemoUsecase
@@ -8,6 +10,7 @@ from app.presentation.memo.schemas.memo_schemas import (
     MemoResponse,
     SearchRequest,
     SearchResponse,
+    UpdateMemoRequest,
 )
 
 app = FastAPI(
@@ -58,6 +61,34 @@ def get_memos(
         )
         for m in memos
     ]
+
+
+@app.patch("/memos/{memo_id}", response_model=MemoResponse)
+def update_memo(
+    memo_id: UUID,
+    request: UpdateMemoRequest,
+    usecase: MemoUsecase = Depends(get_memo_usecase),
+) -> MemoResponse:
+    memo = usecase.update_memo(memo_id, request.content)
+    if memo is None:
+        raise HTTPException(status_code=404, detail="Memo not found")
+    return MemoResponse(
+        id=memo.id,
+        content=memo.content,
+        summary=memo.summary,
+        tags=memo.tags,
+        created_at=memo.created_at,
+    )
+
+
+@app.delete("/memos/{memo_id}", status_code=204)
+def delete_memo(
+    memo_id: UUID,
+    usecase: MemoUsecase = Depends(get_memo_usecase),
+) -> None:
+    deleted = usecase.delete_memo(memo_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Memo not found")
 
 
 @app.post("/memos/search", response_model=SearchResponse)

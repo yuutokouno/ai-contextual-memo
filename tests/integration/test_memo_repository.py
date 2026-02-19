@@ -74,6 +74,21 @@ class TestPostgresMemoRepository:
         assert found is not None
         assert found.tags == []
 
+    def test_メモを削除できる(self, repository: PostgresMemoRepository) -> None:
+        memo = Memo(content="delete me")
+        repository.save(memo)
+
+        deleted = repository.delete(memo.id)
+
+        assert deleted is True
+        assert repository.get_by_id(memo.id) is None
+
+    def test_存在しないIDの削除はFalseを返す(
+        self, repository: PostgresMemoRepository
+    ) -> None:
+        result = repository.delete(uuid4())
+        assert result is False
+
     def test_空のリポジトリからget_allは空リストを返す(
         self, repository: PostgresMemoRepository
     ) -> None:

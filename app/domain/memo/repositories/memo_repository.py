@@ -15,3 +15,6 @@ class IMemoRepository(ABC):
 
     @abstractmethod
     def get_by_id(self, memo_id: UUID) -> Memo | None: ...
+
+    @abstractmethod
+    def delete(self, memo_id: UUID) -> bool: ...

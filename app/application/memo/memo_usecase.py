@@ -36,6 +36,26 @@ class MemoUsecase:
     def get_memo_by_id(self, memo_id: UUID) -> Memo | None:
         return self._repository.get_by_id(memo_id)
 
+    def update_memo(self, memo_id: UUID, content: str) -> Memo | None:
+        memo = self._repository.get_by_id(memo_id)
+        if memo is None:
+            return None
+
+        memo.content = content
+        analysis = self._ai_client.analyze_memo(content)
+        memo.summary = analysis.summary
+        memo.tags = analysis.tags
+
+        self._repository.save(memo)
+        logger.info("Memo updated: id=%s", memo.id)
+        return memo
+
+    def delete_memo(self, memo_id: UUID) -> bool:
+        deleted = self._repository.delete(memo_id)
+        if deleted:
+            logger.info("Memo deleted: id=%s", memo_id)
+        return deleted
+
     def search_memos(self, query: str) -> SearchResult:
         memos = self._repository.get_all()
         return self._ai_client.search_memos(query, memos)

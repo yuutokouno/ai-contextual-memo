@@ -77,6 +77,39 @@ class TestGetMemos:
 
 
 @pytest.mark.unit
+class TestUpdateMemo:
+    def test_メモ内容を更新するとAI再解析される(self, usecase: MemoUsecase) -> None:
+        memo = usecase.create_memo("original")
+
+        updated = usecase.update_memo(memo.id, "updated content")
+
+        assert updated is not None
+        assert updated.content == "updated content"
+        assert updated.summary is not None
+
+    def test_存在しないIDの更新はNoneを返す(self, usecase: MemoUsecase) -> None:
+        result = usecase.update_memo(uuid4(), "content")
+        assert result is None
+
+
+@pytest.mark.unit
+class TestDeleteMemo:
+    def test_メモを削除できる(
+        self, usecase: MemoUsecase, repository: InMemoryMemoRepository
+    ) -> None:
+        memo = usecase.create_memo("delete me")
+
+        deleted = usecase.delete_memo(memo.id)
+
+        assert deleted is True
+        assert repository.get_by_id(memo.id) is None
+
+    def test_存在しないIDの削除はFalseを返す(self, usecase: MemoUsecase) -> None:
+        result = usecase.delete_memo(uuid4())
+        assert result is False
+
+
+@pytest.mark.unit
 class TestSearchMemos:
     def test_検索クエリでAI検索結果が返る(self, usecase: MemoUsecase) -> None:
         usecase.create_memo("Python tips")

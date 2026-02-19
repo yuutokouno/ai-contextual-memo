@@ -106,6 +106,43 @@ class TestSearchMemosAPI:
 
 
 @pytest.mark.integration
+class TestUpdateMemoAPI:
+    def test_メモ内容を更新できる(self, client: TestClient) -> None:
+        create_resp = client.post("/memos", json={"content": "original"})
+        memo_id = create_resp.json()["id"]
+
+        response = client.patch(f"/memos/{memo_id}", json={"content": "updated"})
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["content"] == "updated"
+        assert data["summary"] is not None
+
+    def test_存在しないIDの更新は404を返す(self, client: TestClient) -> None:
+        fake_id = "00000000-0000-0000-0000-000000000000"
+        response = client.patch(f"/memos/{fake_id}", json={"content": "x"})
+        assert response.status_code == 404
+
+
+@pytest.mark.integration
+class TestDeleteMemoAPI:
+    def test_メモを削除できる(self, client: TestClient) -> None:
+        create_resp = client.post("/memos", json={"content": "delete me"})
+        memo_id = create_resp.json()["id"]
+
+        response = client.delete(f"/memos/{memo_id}")
+        assert response.status_code == 204
+
+        get_resp = client.get("/memos")
+        assert len(get_resp.json()) == 0
+
+    def test_存在しないIDの削除は404を返す(self, client: TestClient) -> None:
+        fake_id = "00000000-0000-0000-0000-000000000000"
+        response = client.delete(f"/memos/{fake_id}")
+        assert response.status_code == 404
+
+
+@pytest.mark.integration
 class TestErrorHandling:
     def test_AI障害時にメモ作成は500を返す(self, failing_client: TestClient) -> None:
         response = failing_client.post("/memos", json={"content": "will fail"})

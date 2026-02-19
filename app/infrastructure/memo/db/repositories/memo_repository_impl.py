@@ -37,6 +37,15 @@ class PostgresMemoRepository(IMemoRepository):
                 return None
             return self._to_domain(row)
 
+    def delete(self, memo_id: UUID) -> bool:
+        with self._session_factory() as session:
+            row = session.get(MemoRow, memo_id)
+            if row is None:
+                return False
+            session.delete(row)
+            session.commit()
+            return True
+
     @staticmethod
     def _to_domain(row: MemoRow) -> Memo:
         return Memo(
