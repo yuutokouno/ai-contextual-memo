@@ -18,3 +18,8 @@ class IMemoRepository(ABC):
 
     @abstractmethod
     def delete(self, memo_id: UUID) -> bool: ...
+
+    @abstractmethod
+    def search_by_vector(
+        self, query_embedding: list[float], limit: int = 5
+    ) -> list[Memo]: ...

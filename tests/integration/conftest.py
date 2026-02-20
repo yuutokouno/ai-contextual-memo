@@ -1,4 +1,5 @@
 import os
+from collections.abc import Generator
 
 import pytest
 from sqlalchemy import create_engine, text
@@ -30,8 +31,18 @@ def create_test_database() -> None:
     engine.dispose()
 
 
+@pytest.fixture(scope="session", autouse=True)
+def enable_pgvector(create_test_database: None) -> None:
+    """Enable pgvector extension in test database."""
+    engine = create_engine(TEST_DATABASE_URL)
+    with engine.connect() as conn:
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        conn.commit()
+    engine.dispose()
+
+
 @pytest.fixture(scope="function")
-def test_session_factory() -> sessionmaker[Session]:
+def test_session_factory() -> Generator[sessionmaker[Session]]:
     """Create tables before each test, drop after."""
     engine = create_engine(TEST_DATABASE_URL)
     Base.metadata.create_all(bind=engine)

@@ -20,6 +20,7 @@ class PostgresMemoRepository(IMemoRepository):
                 content=memo.content,
                 summary=memo.summary,
                 tags=memo.tags,
+                embedding=memo.embedding,
                 created_at=memo.created_at,
             )
             session.merge(row)
@@ -46,12 +47,27 @@ class PostgresMemoRepository(IMemoRepository):
             session.commit()
             return True
 
+    def search_by_vector(
+        self, query_embedding: list[float], limit: int = 5
+    ) -> list[Memo]:
+        with self._session_factory() as session:
+            rows = (
+                session.query(MemoRow)
+                .filter(MemoRow.embedding.isnot(None))
+                .order_by(MemoRow.embedding.cosine_distance(query_embedding))
+                .limit(limit)
+                .all()
+            )
+            return [self._to_domain(row) for row in rows]
+
     @staticmethod
     def _to_domain(row: MemoRow) -> Memo:
+        embedding = row.embedding.tolist() if row.embedding is not None else None
         return Memo(
             id=row.id,
             content=row.content,
             summary=row.summary,
             tags=row.tags,
+            embedding=embedding,
             created_at=row.created_at,
         )

@@ -94,3 +94,46 @@ class TestPostgresMemoRepository:
     ) -> None:
         result = repository.get_all()
         assert result == []
+
+    def test_embeddingを保存して取得できる(
+        self, repository: PostgresMemoRepository
+    ) -> None:
+        embedding = [0.1] * 384
+        memo = Memo(content="with vector", embedding=embedding)
+        repository.save(memo)
+
+        found = repository.get_by_id(memo.id)
+        assert found is not None
+        assert found.embedding is not None
+        assert len(found.embedding) == 384
+
+    def test_pgvectorでベクトル類似度検索ができる(
+        self, repository: PostgresMemoRepository
+    ) -> None:
+        memo_a = Memo(content="a", embedding=[1.0] + [0.0] * 383)
+        memo_b = Memo(content="b", embedding=[0.0] + [1.0] + [0.0] * 382)
+        memo_c = Memo(content="c", embedding=[0.9] + [0.1] + [0.0] * 382)
+        repository.save(memo_a)
+        repository.save(memo_b)
+        repository.save(memo_c)
+
+        query_vec = [1.0] + [0.0] * 383
+        results = repository.search_by_vector(query_vec, limit=2)
+
+        assert len(results) == 2
+        # memo_a should be the closest match
+        assert results[0].content == "a"
+
+    def test_embeddingがNoneのメモはベクトル検索から除外される(
+        self, repository: PostgresMemoRepository
+    ) -> None:
+        memo_with = Memo(content="has vector", embedding=[0.5] * 384)
+        memo_without = Memo(content="no vector")
+        repository.save(memo_with)
+        repository.save(memo_without)
+
+        results = repository.search_by_vector([0.5] * 384, limit=10)
+
+        ids = [m.id for m in results]
+        assert memo_with.id in ids
+        assert memo_without.id not in ids

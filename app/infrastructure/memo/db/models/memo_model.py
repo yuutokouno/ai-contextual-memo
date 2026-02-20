@@ -1,11 +1,14 @@
 import uuid
 from datetime import datetime
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import DateTime, String, Text
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.memo.db.database import Base
+
+_EMBEDDING_DIMENSION = 384
 
 
 class MemoRow(Base):
@@ -19,6 +22,7 @@ class MemoRow(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     tags: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False, default=list)
+    embedding = mapped_column(Vector(_EMBEDDING_DIMENSION), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.now
     )
