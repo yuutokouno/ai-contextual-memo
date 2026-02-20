@@ -11,4 +11,5 @@ class Memo(BaseModel):
     content: str
     summary: str | None = None
     tags: list[str] = Field(default_factory=list)
+    embedding: list[float] | None = None
     created_at: datetime = Field(default_factory=datetime.now)

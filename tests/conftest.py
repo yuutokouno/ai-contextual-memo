@@ -6,6 +6,7 @@ from app.domain.memo.services.ai_client import (
     MemoAnalysisResult,
     SearchResult,
 )
+from app.domain.memo.services.embedding_client import IEmbeddingClient
 
 
 class StubAIClient(IAIClient):
@@ -34,6 +35,19 @@ class FailingAIClient(IAIClient):
         raise RuntimeError("AI service unavailable")
 
 
+class StubEmbeddingClient(IEmbeddingClient):
+    """Stub embedding client that returns deterministic vectors for testing."""
+
+    def embed(self, text: str) -> list[float]:
+        # Produce a simple deterministic vector from text hash
+        h = hash(text) % (2**32)
+        base = [(h >> i & 0xFF) / 255.0 for i in range(0, 32, 8)]
+        return (base * 96)[:384]
+
+    def dimension(self) -> int:
+        return 384
+
+
 @pytest.fixture
 def stub_ai_client() -> StubAIClient:
     return StubAIClient()
@@ -42,3 +56,8 @@ def stub_ai_client() -> StubAIClient:
 @pytest.fixture
 def failing_ai_client() -> FailingAIClient:
     return FailingAIClient()
+
+
+@pytest.fixture
+def stub_embedding_client() -> StubEmbeddingClient:
+    return StubEmbeddingClient()
