@@ -1,5 +1,6 @@
-.PHONY: install dev run test test-unit test-integration test-cov lint format check \
-       front-install front-dev front-build front-tauri up
+.PHONY: install dev run test test-unit test-integration test-cov lint format format-check check \
+       front-install front-dev front-build front-tauri front-lint up \
+       db-up db-down db-reset ci-quick ci
 
 # ── Backend ──────────────────────────────────────────────
 
@@ -32,6 +33,9 @@ format:
 	uv run ruff format .
 	uv run ruff check --fix .
 
+format-check:
+	uv run ruff format --check .
+
 check: lint test
 
 # ── Frontend ─────────────────────────────────────────────
@@ -45,8 +49,32 @@ front-dev:
 front-build:
 	cd frontend && npm run build
 
+front-lint:
+	cd frontend && npx tsc --noEmit
+
 front-tauri:
 	cd frontend && npm run tauri dev
+
+# ── Database ─────────────────────────────────────────────
+
+db-up:
+	docker compose up -d db
+	@echo "Waiting for PostgreSQL to be ready..."
+	@until docker compose exec db pg_isready -U acm -d acm_db > /dev/null 2>&1; do sleep 1; done
+	@echo "PostgreSQL is ready."
+
+db-down:
+	docker compose down
+
+db-reset:
+	docker compose down -v
+	$(MAKE) db-up
+
+# ── CI ───────────────────────────────────────────────────
+
+ci-quick: lint test-unit front-lint
+
+ci: lint test front-lint front-build
 
 # ── All-in-one ───────────────────────────────────────────
 
