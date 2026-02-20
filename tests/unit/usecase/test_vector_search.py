@@ -1,5 +1,3 @@
-from uuid import uuid4
-
 import pytest
 
 from app.application.memo.memo_usecase import MemoUsecase
@@ -82,9 +80,7 @@ class TestVectorSearch:
         )
         usecase.create_memo("has vector")
 
-        results = repository.search_by_vector(
-            embedding_client.embed("query"), limit=10
-        )
+        results = repository.search_by_vector(embedding_client.embed("query"), limit=10)
 
         ids = [m.id for m in results]
         assert memo_no_vec.id not in ids
