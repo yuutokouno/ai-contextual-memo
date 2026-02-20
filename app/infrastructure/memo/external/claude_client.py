@@ -3,6 +3,7 @@ import logging
 import re
 
 from anthropic import Anthropic
+from anthropic.types import TextBlock
 
 from app.domain.memo.entities.memo import Memo
 from app.domain.memo.services.ai_client import (
@@ -67,8 +68,12 @@ class ClaudeClient(IAIClient):
             messages=[{"role": "user", "content": content}],
         )
 
-        raw_text = response.content[0].text
-        parsed = _extract_json(raw_text)
+        first_block = response.content[0]
+        if not isinstance(first_block, TextBlock):
+            msg = f"Expected TextBlock, got {type(first_block).__name__}"
+            raise TypeError(msg)
+
+        parsed = _extract_json(first_block.text)
 
         return MemoAnalysisResult(
             summary=parsed["summary"],
@@ -93,8 +98,12 @@ class ClaudeClient(IAIClient):
             messages=[{"role": "user", "content": user_message}],
         )
 
-        raw_text = response.content[0].text
-        parsed = _extract_json(raw_text)
+        first_block = response.content[0]
+        if not isinstance(first_block, TextBlock):
+            msg = f"Expected TextBlock, got {type(first_block).__name__}"
+            raise TypeError(msg)
+
+        parsed = _extract_json(first_block.text)
 
         return SearchResult(
             answer=parsed["answer"],
