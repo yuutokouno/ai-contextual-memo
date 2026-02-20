@@ -68,9 +68,7 @@ class MemoUsecase:
     def search_memos(self, query: str) -> SearchResult:
         if self._embedding_client is not None:
             query_embedding = self._embedding_client.embed(query)
-            relevant_memos = self._repository.search_by_vector(
-                query_embedding, limit=5
-            )
+            relevant_memos = self._repository.search_by_vector(query_embedding, limit=5)
         else:
             relevant_memos = self._repository.get_all()
 

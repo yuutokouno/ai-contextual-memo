@@ -9,9 +9,7 @@ _DIMENSION = 1536
 class OpenAIEmbeddingClient(IEmbeddingClient):
     """OpenAI API implementation of IEmbeddingClient."""
 
-    def __init__(
-        self, api_key: str, model: str = _DEFAULT_MODEL
-    ) -> None:
+    def __init__(self, api_key: str, model: str = _DEFAULT_MODEL) -> None:
         self._client = OpenAI(api_key=api_key)
         self._model = model
 

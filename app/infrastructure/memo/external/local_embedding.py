@@ -14,7 +14,7 @@ class LocalEmbeddingClient(IEmbeddingClient):
 
     def embed(self, text: str) -> list[float]:
         vector = self._model.encode(text)
-        return vector.tolist()  # type: ignore[no-any-return]
+        return vector.tolist()
 
     def dimension(self) -> int:
         return _DIMENSION
