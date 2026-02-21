@@ -5,7 +5,7 @@ from sklearn.decomposition import PCA  # type: ignore[import-untyped]
 
 def reduce_to_3d(
     embeddings: list[list[float]],
-    scale: float = 10.0,
+    scale: float = 20.0,
 ) -> list[dict[str, float]]:
     """Reduce high-dimensional embeddings to 3D coordinates using PCA.
 

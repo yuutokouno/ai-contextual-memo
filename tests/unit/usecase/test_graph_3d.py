@@ -96,15 +96,15 @@ class TestGraph3DData:
         )
 
         for node in graph.nodes:
-            assert -10.0 <= node.position.x <= 10.0
-            assert -10.0 <= node.position.y <= 10.0
-            assert -10.0 <= node.position.z <= 10.0
+            assert -20.0 <= node.position.x <= 20.0
+            assert -20.0 <= node.position.y <= 20.0
+            assert -20.0 <= node.position.z <= 20.0
             # At least one coordinate reaches the boundary
         max_abs = max(
             max(abs(n.position.x), abs(n.position.y), abs(n.position.z))
             for n in graph.nodes
         )
-        assert max_abs == pytest.approx(10.0, abs=0.01)
+        assert max_abs == pytest.approx(20.0, abs=0.01)
 
     def test_エッジが2Dグラフと一致する(
         self,
