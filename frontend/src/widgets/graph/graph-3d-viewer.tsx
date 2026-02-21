@@ -35,20 +35,94 @@ function getNodeLabel(tags: string[], label: string): string {
   return label.length > 12 ? label.slice(0, 12) + "..." : label;
 }
 
-// Background star particles with varied sizes
+/**
+ * Generate a star-burst glow texture via Canvas2D.
+ * Produces a radial gradient with 4-spike cross flare.
+ */
+function createStarTexture(
+  color: string,
+  size: number = 128,
+): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  const cx = size / 2;
+  const cy = size / 2;
+
+  // Parse hex to RGB for gradient stops
+  const r = parseInt(color.slice(1, 3), 16);
+  const g = parseInt(color.slice(3, 5), 16);
+  const b = parseInt(color.slice(5, 7), 16);
+
+  // 1) Radial soft glow
+  const radial = ctx.createRadialGradient(cx, cy, 0, cx, cy, cx);
+  radial.addColorStop(0, `rgba(255,255,255,1)`);
+  radial.addColorStop(0.05, `rgba(${r},${g},${b},0.9)`);
+  radial.addColorStop(0.3, `rgba(${r},${g},${b},0.3)`);
+  radial.addColorStop(0.6, `rgba(${r},${g},${b},0.08)`);
+  radial.addColorStop(1, `rgba(${r},${g},${b},0)`);
+  ctx.fillStyle = radial;
+  ctx.fillRect(0, 0, size, size);
+
+  // 2) Cross-shaped light spikes (4 directions)
+  ctx.globalCompositeOperation = "screen";
+  const spikeLength = cx * 0.95;
+  const spikeWidth = size * 0.02;
+
+  for (const angle of [0, Math.PI / 2, Math.PI / 4, -Math.PI / 4]) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+
+    const grad = ctx.createLinearGradient(0, 0, spikeLength, 0);
+    grad.addColorStop(0, `rgba(255,255,255,0.8)`);
+    grad.addColorStop(0.2, `rgba(${r},${g},${b},0.5)`);
+    grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+
+    // Draw both directions of the spike
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, -spikeWidth / 2, spikeLength, spikeWidth);
+
+    const grad2 = ctx.createLinearGradient(0, 0, -spikeLength, 0);
+    grad2.addColorStop(0, `rgba(255,255,255,0.8)`);
+    grad2.addColorStop(0.2, `rgba(${r},${g},${b},0.5)`);
+    grad2.addColorStop(1, `rgba(${r},${g},${b},0)`);
+    ctx.fillStyle = grad2;
+    ctx.fillRect(-spikeLength, -spikeWidth / 2, spikeLength, spikeWidth);
+
+    ctx.restore();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+}
+
+// Texture cache — one per color
+const textureCache = new Map<string, THREE.CanvasTexture>();
+
+function getStarTexture(color: string): THREE.CanvasTexture {
+  let tex = textureCache.get(color);
+  if (!tex) {
+    tex = createStarTexture(color);
+    textureCache.set(color, tex);
+  }
+  return tex;
+}
+
+// Background star particles
 const Stars = () => {
   const count = 800;
 
-  const { positions, sizes } = useMemo(() => {
+  const positions = useMemo(() => {
     const pos = new Float32Array(count * 3);
-    const sz = new Float32Array(count);
     for (let i = 0; i < count; i++) {
       pos[i * 3] = (Math.random() - 0.5) * 100;
       pos[i * 3 + 1] = (Math.random() - 0.5) * 100;
       pos[i * 3 + 2] = (Math.random() - 0.5) * 100;
-      sz[i] = Math.random() * 0.12 + 0.02;
     }
-    return { positions: pos, sizes: sz };
+    return pos;
   }, []);
 
   const ref = useRef<THREE.Points>(null);
@@ -66,10 +140,6 @@ const Stars = () => {
           attach="attributes-position"
           args={[positions, 3]}
         />
-        <bufferAttribute
-          attach="attributes-size"
-          args={[sizes, 1]}
-        />
       </bufferGeometry>
       <pointsMaterial
         size={0.1}
@@ -82,7 +152,7 @@ const Stars = () => {
   );
 };
 
-// Cursor management — switch to pointer on hover
+// Cursor management
 const CursorManager = ({ isHovering }: { isHovering: boolean }) => {
   const { gl } = useThree();
   const prevCursor = useRef("");
@@ -98,7 +168,7 @@ const CursorManager = ({ isHovering }: { isHovering: boolean }) => {
   return null;
 };
 
-type NodeSphereProps = {
+type StarNodeProps = {
   node: Graph3DNode;
   isSelected: boolean;
   isConnected: boolean;
@@ -107,39 +177,48 @@ type NodeSphereProps = {
   onHover: (isHovered: boolean) => void;
 };
 
-const NodeSphere = ({
+const StarNode = ({
   node,
   isSelected,
   isConnected,
   isDimmed,
   onClick,
   onHover,
-}: NodeSphereProps) => {
+}: StarNodeProps) => {
   const color = getNodeColor(node.tags);
   const label = getNodeLabel(node.tags, node.label);
+  const starTexture = useMemo(() => getStarTexture(color), [color]);
+
   const groupRef = useRef<THREE.Group>(null);
-  const glowRef = useRef<THREE.Mesh>(null);
-  const ringRef = useRef<THREE.Mesh>(null);
+  const spriteRef = useRef<THREE.Sprite>(null);
+  const coreRef = useRef<THREE.Mesh>(null);
   const [isHovered, setIsHovered] = useState(false);
 
   useFrame((_state, delta) => {
+    // Smooth scale transition
     if (groupRef.current) {
-      const targetScale = isSelected ? 1.3 : isHovered ? 1.15 : 1.0;
+      const targetScale = isSelected ? 1.4 : isHovered ? 1.2 : 1.0;
       groupRef.current.scale.lerp(
         new THREE.Vector3(targetScale, targetScale, targetScale),
         delta * 8,
       );
     }
-    // Pulse the outer glow
-    if (glowRef.current) {
-      const mat = glowRef.current.material as THREE.MeshBasicMaterial;
-      const baseOpacity = isSelected ? 0.2 : isHovered ? 0.15 : 0.08;
-      const pulse = Math.sin(Date.now() * 0.003) * 0.03;
-      mat.opacity = isDimmed ? 0.02 : baseOpacity + pulse;
+    // Pulse the flare sprite
+    if (spriteRef.current) {
+      const mat = spriteRef.current.material as THREE.SpriteMaterial;
+      const base = isSelected ? 0.95 : isConnected ? 0.75 : 0.55;
+      const pulse = Math.sin(Date.now() * 0.003) * 0.1;
+      mat.opacity = isDimmed ? 0.08 : base + pulse;
+
+      // Slowly rotate the flare sprite
+      mat.rotation += delta * 0.15;
     }
-    // Rotate the ring
-    if (ringRef.current) {
-      ringRef.current.rotation.z += delta * 0.4;
+    // Pulsing inner core brightness
+    if (coreRef.current) {
+      const mat = coreRef.current.material as THREE.MeshBasicMaterial;
+      const base = isSelected ? 0.9 : 0.5;
+      const pulse = Math.sin(Date.now() * 0.005) * 0.15;
+      mat.opacity = isDimmed ? 0.05 : base + pulse;
     }
   });
 
@@ -161,62 +240,64 @@ const NodeSphere = ({
     onHover(false);
   }, [onHover]);
 
-  const opacity = isDimmed ? 0.15 : 1.0;
+  const baseOpacity = isDimmed ? 0.12 : 1.0;
 
   return (
     <group position={[node.position.x, node.position.y, node.position.z]}>
       <group ref={groupRef}>
-        {/* Outer glow — always visible */}
-        <mesh ref={glowRef}>
-          <sphereGeometry args={[0.65, 20, 20]} />
-          <meshBasicMaterial color={color} transparent opacity={0.08} />
-        </mesh>
+        {/* Star flare sprite — cross-shaped glow, always faces camera */}
+        <sprite ref={spriteRef} scale={[3.0, 3.0, 1]}>
+          <spriteMaterial
+            map={starTexture}
+            transparent
+            opacity={0.55}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+          />
+        </sprite>
 
-        {/* Main sphere */}
+        {/* Clickable core sphere — small and bright */}
         <mesh
           onClick={handleClick}
           onPointerEnter={handlePointerEnter}
           onPointerLeave={handlePointerLeave}
         >
-          <sphereGeometry args={[0.35, 32, 32]} />
+          <sphereGeometry args={[0.25, 32, 32]} />
           <meshStandardMaterial
             color={color}
             emissive={color}
             emissiveIntensity={
-              isSelected ? 0.9 : isConnected ? 0.6 : 0.35
+              isSelected ? 1.2 : isConnected ? 0.8 : 0.5
             }
             transparent
-            opacity={opacity}
-            roughness={0.3}
-            metalness={0.2}
+            opacity={baseOpacity}
+            roughness={0.15}
+            metalness={0.1}
           />
         </mesh>
 
-        {/* Inner core — bright center */}
-        <mesh>
-          <sphereGeometry args={[0.15, 16, 16]} />
+        {/* White-hot inner core */}
+        <mesh ref={coreRef}>
+          <sphereGeometry args={[0.1, 16, 16]} />
           <meshBasicMaterial
             color="white"
             transparent
-            opacity={isDimmed ? 0.05 : 0.35}
+            opacity={isDimmed ? 0.05 : 0.5}
           />
         </mesh>
 
-        {/* Decorative ring — selected or hovered */}
-        {(isSelected || isHovered) && (
-          <mesh ref={ringRef} rotation={[Math.PI / 3, 0, 0]}>
-            <ringGeometry args={[0.5, 0.55, 48]} />
-            <meshBasicMaterial
-              color={color}
-              transparent
-              opacity={0.4}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
-        )}
+        {/* Soft glow halo */}
+        <mesh>
+          <sphereGeometry args={[0.45, 20, 20]} />
+          <meshBasicMaterial
+            color={color}
+            transparent
+            opacity={isDimmed ? 0.02 : 0.1}
+          />
+        </mesh>
       </group>
 
-      {/* Billboard label — always faces camera */}
+      {/* Billboard label */}
       <Billboard follow lockX={false} lockY={false} lockZ={false}>
         <Text
           position={[0, -0.85, 0]}
@@ -224,10 +305,10 @@ const NodeSphere = ({
           color="white"
           anchorX="center"
           anchorY="top"
-          fillOpacity={isDimmed ? 0.1 : 0.85}
-          outlineWidth={0.015}
+          fillOpacity={isDimmed ? 0.08 : 0.85}
+          outlineWidth={0.02}
           outlineColor="#000000"
-          outlineOpacity={isDimmed ? 0.05 : 0.5}
+          outlineOpacity={isDimmed ? 0.03 : 0.6}
         >
           {label}
         </Text>
@@ -258,9 +339,7 @@ const EdgeLine = ({
     [targetNode.position.x, targetNode.position.y, targetNode.position.z],
   ];
 
-  const color = isHighlighted
-    ? "#a5b4fc"
-    : "#6366f1";
+  const color = isHighlighted ? "#a5b4fc" : "#6366f1";
   const lineWidth = isHighlighted
     ? Math.max(1.5, edge.similarity * 3)
     : Math.max(0.5, edge.similarity * 1.5);
@@ -315,18 +394,14 @@ export const Graph3DViewer = ({
       camera={{ position: [20, 15, 20], fov: 50 }}
       onPointerMissed={onPaneClick}
       style={{ background: "#0F0F1A" }}
+      gl={{ antialias: true, alpha: false }}
     >
-      <ambientLight intensity={0.3} />
-      <pointLight position={[25, 20, 25]} intensity={0.7} />
+      <ambientLight intensity={0.2} />
+      <pointLight position={[25, 20, 25]} intensity={0.5} />
       <pointLight
         position={[-15, -10, -15]}
-        intensity={0.25}
+        intensity={0.2}
         color="#6366f1"
-      />
-      <pointLight
-        position={[0, 25, 0]}
-        intensity={0.15}
-        color="#c084fc"
       />
 
       <CursorManager isHovering={isNodeHovered} />
@@ -357,7 +432,7 @@ export const Graph3DViewer = ({
           selectedNodeId !== null && !isSelected && !isConnected;
 
         return (
-          <NodeSphere
+          <StarNode
             key={node.id}
             node={node}
             isSelected={isSelected}
