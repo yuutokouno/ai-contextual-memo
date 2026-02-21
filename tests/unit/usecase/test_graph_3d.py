@@ -124,10 +124,6 @@ class TestGraph3DData:
             threshold=0.7,
         )
 
-        edges_2d = {
-            (e.source, e.target, e.similarity) for e in graph_2d.edges
-        }
-        edges_3d = {
-            (e.source, e.target, e.similarity) for e in graph_3d.edges
-        }
+        edges_2d = {(e.source, e.target, e.similarity) for e in graph_2d.edges}
+        edges_3d = {(e.source, e.target, e.similarity) for e in graph_3d.edges}
         assert edges_2d == edges_3d
