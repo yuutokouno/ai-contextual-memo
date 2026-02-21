@@ -101,9 +101,7 @@ class MemoUsecase:
 
     def get_graph_data(self, threshold: float | None = None) -> GraphData:
         if threshold is None:
-            threshold = float(
-                os.environ.get("GRAPH_SIMILARITY_THRESHOLD", "0.7")
-            )
+            threshold = float(os.environ.get("GRAPH_SIMILARITY_THRESHOLD", "0.7"))
 
         all_memos = self._repository.get_all()
         memos_with_embedding = [m for m in all_memos if m.embedding is not None]
