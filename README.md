@@ -12,7 +12,7 @@ Built for junior engineers and self-learners who don't yet know what they don't 
 
 - **CRUD + AI Analysis** — Create, read, update, delete memos. Claude auto-generates summaries and tags.
 - **Vector Similarity Search** — Find related memos by meaning, not keywords (sentence-transformers / pgvector).
-- **Knowledge Graph Visualization** — Memos as nodes, similarity as edges (planned).
+- **Knowledge Graph Visualization** — Interactive 2D graph with React Flow. Nodes colored by tag, edges weighted by similarity.
 - **AI Knowledge Gap Detection** — Detect missing intermediate topics between distant nodes (planned).
 
 ## Tech Stack
@@ -22,9 +22,9 @@ Built for junior engineers and self-learners who don't yet know what they don't 
 | Backend | Python 3.12 / FastAPI / SQLAlchemy / PostgreSQL 16 |
 | AI | Anthropic Claude API (Haiku) |
 | Embedding | sentence-transformers (`all-MiniLM-L6-v2`) / pgvector |
-| Frontend | React 19 / TypeScript / Vite / Tailwind CSS v4 |
+| Frontend | React 19 / TypeScript / Vite / Tailwind CSS v4 / React Flow v12 |
 | Desktop | Tauri v2 |
-| Test | pytest (49 tests / unit + integration) |
+| Test | pytest (53 tests / unit + integration) |
 | Quality | ruff / mypy / GitHub Actions CI |
 | Package | uv (Backend) / npm (Frontend) |
 
@@ -45,10 +45,17 @@ app/
 
 ```
 frontend/src/
-├── app/              QueryClientProvider
-├── pages/memo/       Memo page (create + list + search)
-├── features/memo/    Use-case hooks (create / list / search)
-├── entities/memo/    Type definitions + API client
+├── app/              Providers + tab navigation (Memos / Graph)
+├── pages/
+│   ├── memo/         Memo page (create + list + search)
+│   └── graph/        Knowledge graph page
+├── widgets/graph/    GraphViewer (React Flow) + NodeDetailPanel
+├── features/
+│   ├── memo/         Use-case hooks (create / list / search / update / delete)
+│   └── graph/        useGraphData hook
+├── entities/
+│   ├── memo/         Memo types + API client
+│   └── graph/        Graph types + API client
 └── shared/api/       axios-based HTTP client
 ```
 
@@ -108,6 +115,7 @@ make front-tauri   # Tauri desktop app
 | `PUT /memos/{id}` | Update a memo (AI re-analyzes) |
 | `DELETE /memos/{id}` | Delete a memo |
 | `POST /memos/search` | Semantic search with AI-generated answer |
+| `GET /memos/graph` | Knowledge graph data (nodes + edges by similarity) |
 
 ## Make Commands
 
@@ -156,6 +164,6 @@ make front-tauri   # Tauri desktop app
 
 - **Phase 1** — Basic CRUD + AI summarization + semantic search ✅
 - **Phase 2** — Vector similarity search (sentence-transformers / pgvector) ✅
-- **Phase 3** — Knowledge graph UI (React Flow / D3.js)
+- **Phase 3** — Knowledge graph UI (React Flow) ✅
 - **Phase 4** — AI knowledge gap detection
 - **Phase 5** — 3D constellation UI (Three.js)
