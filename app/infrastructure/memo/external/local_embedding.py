@@ -2,7 +2,7 @@ from sentence_transformers import SentenceTransformer
 
 from app.domain.memo.services.embedding_client import IEmbeddingClient
 
-_DEFAULT_MODEL = "all-MiniLM-L6-v2"
+_DEFAULT_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
 _DIMENSION = 384
 
 
