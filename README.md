@@ -111,8 +111,7 @@ make front-tauri   # Tauri desktop app
 |---|---|
 | `POST /memos` | Create a memo (AI auto-summarizes & tags) |
 | `GET /memos` | List all memos |
-| `GET /memos/{id}` | Get a single memo |
-| `PUT /memos/{id}` | Update a memo (AI re-analyzes) |
+| `PATCH /memos/{id}` | Update a memo (AI re-analyzes) |
 | `DELETE /memos/{id}` | Delete a memo |
 | `POST /memos/search` | Semantic search with AI-generated answer |
 | `GET /memos/graph` | Knowledge graph data (nodes + edges by similarity) |
@@ -165,5 +164,5 @@ make front-tauri   # Tauri desktop app
 - **Phase 1** — Basic CRUD + AI summarization + semantic search ✅
 - **Phase 2** — Vector similarity search (sentence-transformers / pgvector) ✅
 - **Phase 3** — Knowledge graph UI (React Flow) ✅
-- **Phase 4** — AI knowledge gap detection
-- **Phase 5** — 3D constellation UI (Three.js)
+- **Phase 4** — 3D constellation UI (Three.js) — [PR #6](https://github.com/yuutokouno/ai-contextual-memo/pull/6)
+- **Phase 5** — AI knowledge gap detection
