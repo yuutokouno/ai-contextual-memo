@@ -90,7 +90,7 @@ const MemoCard = ({ memo, isHighlighted, onTagClick }: MemoCardProps) => {
         <span className="text-white/40 shrink-0">
           {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         </span>
-        <span className="text-[15px] font-medium text-white truncate flex-1">
+        <span className="text-[15px] font-medium text-white flex-1 break-words">
           {title}
         </span>
         {memo.tags.length > 0 && (
