@@ -1,190 +1,161 @@
+[![CI](https://github.com/yuutokouno/ai-contextual-memo/actions/workflows/ci.yml/badge.svg)](https://github.com/yuutokouno/ai-contextual-memo/actions/workflows/ci.yml)
+
 # AI-Contextual Memo (ACM)
 
-メモの蓄積を「記録」から「活用可能な知識」へ昇華させる AI メモアプリ。
+An AI-powered memo app that transforms personal notes into an **interconnected knowledge graph**.
 
-Claude AI がメモを自動で **要約・タグ付け** し、キーワード一致ではない **意味ベースの検索** を提供する。
+Each memo becomes a knowledge node — automatically summarized and tagged by Claude AI, then embedded into a vector space using sentence-transformers. Nodes close in meaning cluster together; distant nodes reveal **knowledge gaps** that AI can detect and fill with learning suggestions.
 
-## 機能
+Built for junior engineers and self-learners who don't yet know what they don't know.
 
-| エンドポイント | 説明 |
+## Features
+
+- **CRUD + AI Analysis** — Create, read, update, delete memos. Claude auto-generates summaries and tags.
+- **Vector Similarity Search** — Find related memos by meaning, not keywords (sentence-transformers / pgvector).
+- **Knowledge Graph Visualization** — Memos as nodes, similarity as edges (planned).
+- **AI Knowledge Gap Detection** — Detect missing intermediate topics between distant nodes (planned).
+
+## Tech Stack
+
+| Layer | Technology |
 |---|---|
-| `POST /memos` | メモを作成（AI が自動で要約・タグ付け） |
-| `GET /memos` | メモ一覧を取得 |
-| `POST /memos/search` | クエリに対して AI が文脈検索・回答生成 |
+| Backend | Python 3.12 / FastAPI / SQLAlchemy / PostgreSQL 16 |
+| AI | Anthropic Claude API (Haiku) |
+| Embedding | sentence-transformers (`all-MiniLM-L6-v2`) / pgvector |
+| Frontend | React 19 / TypeScript / Vite / Tailwind CSS v4 |
+| Desktop | Tauri v2 |
+| Test | pytest (49 tests / unit + integration) |
+| Quality | ruff / mypy / GitHub Actions CI |
+| Package | uv (Backend) / npm (Frontend) |
 
-## アーキテクチャ
+## Architecture
 
-### Backend: オニオンアーキテクチャ
+### Backend — Onion Architecture
 
 ```
 app/
-├── domain/memo/          ビジネスルール（Entity, Repository Interface, AI Client Interface）
-├── application/memo/     ユースケース（メモ作成・検索のフロー）
-├── infrastructure/memo/  外部接続（Claude API, PostgreSQL, InMemory）
-├── presentation/memo/    FastAPI エンドポイント + スキーマ
-└── di/                   依存性注入
+├── domain/memo/          Business rules (Entity, Repository & AI Client interfaces)
+├── application/memo/     Use cases (create / search / update / delete flows)
+├── infrastructure/memo/  External adapters (Claude API, PostgreSQL, pgvector, InMemory)
+├── presentation/memo/    FastAPI endpoints + request/response schemas
+└── di/                   Dependency injection wiring
 ```
 
-### Frontend: FSD (Feature-Sliced Design) + Tauri
+### Frontend — Feature-Sliced Design + Tauri
 
 ```
 frontend/src/
 ├── app/              QueryClientProvider
-├── pages/memo/       メモページ（作成・一覧・検索を統合）
-├── features/memo/    ユースケース hooks（create / list / search）
-├── entities/memo/    型定義 + API クライアント
-└── shared/api/       axios ベースの HTTP クライアント
+├── pages/memo/       Memo page (create + list + search)
+├── features/memo/    Use-case hooks (create / list / search)
+├── entities/memo/    Type definitions + API client
+└── shared/api/       axios-based HTTP client
 ```
 
-## 前提条件
+## Getting Started
+
+### Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) + Docker Compose
 - [Anthropic API Key](https://console.anthropic.com/)
-- [Node.js](https://nodejs.org/) 20+（フロントエンド）
-- [Rust](https://www.rust-lang.org/tools/install)（Tauri デスクトップアプリ）
+- Python 3.12+ / [uv](https://docs.astral.sh/uv/)
+- [Node.js](https://nodejs.org/) 20+
+- [Rust](https://www.rust-lang.org/tools/install) (for Tauri desktop app)
 
-ローカル実行の場合は追加で:
-- Python 3.12+
-- [uv](https://docs.astral.sh/uv/)
-
-## セットアップ
+### Setup
 
 ```bash
-# 1. リポジトリをクローン
 git clone https://github.com/yuutokouno/ai-contextual-memo.git
 cd ai-contextual-memo
 
-# 2. 環境変数を設定
+# Configure environment
 cp .env.example .env
-# .env を編集して ANTHROPIC_API_KEY を設定
+# Edit .env — set ANTHROPIC_API_KEY
+# EMBEDDING_PROVIDER=local is the default (runs offline)
 
-# 3. バックエンド依存関係をインストール
-make install
-
-# 4. フロントエンド依存関係をインストール
-make front-install
+# Install dependencies
+make install          # Backend (Python)
+make front-install    # Frontend (npm)
 ```
 
-## 起動方法
-
-### バックエンド + フロントエンドを一括起動
+### Run
 
 ```bash
+# 1. Start PostgreSQL (required for vector search)
+make db-up
+
+# 2. Start backend + frontend
 make up
 ```
 
-バックエンド（http://localhost:8000）とフロントエンド（http://localhost:1420）が同時に起動する。
-
-### 個別に起動
-
-```bash
-make run           # バックエンドのみ（FastAPI, port 8000）
-make front-dev     # フロントエンドのみ（Vite dev server, port 1420）
-make front-tauri   # Tauri デスクトップアプリとして起動
-```
-
-### Docker で起動（バックエンド + DB）
+- Backend: http://localhost:8000 (Swagger UI at `/docs`)
+- Frontend: http://localhost:1420
 
 ```bash
-docker compose up -d
-docker compose logs -f app
+# Or run individually
+make run           # Backend only (FastAPI, port 8000)
+make front-dev     # Frontend only (Vite, port 1420)
+make front-tauri   # Tauri desktop app
 ```
 
-起動後 http://localhost:8000/docs で Swagger UI が開く。
+## API
 
-## make コマンド一覧
+| Endpoint | Description |
+|---|---|
+| `POST /memos` | Create a memo (AI auto-summarizes & tags) |
+| `GET /memos` | List all memos |
+| `GET /memos/{id}` | Get a single memo |
+| `PUT /memos/{id}` | Update a memo (AI re-analyzes) |
+| `DELETE /memos/{id}` | Delete a memo |
+| `POST /memos/search` | Semantic search with AI-generated answer |
+
+## Make Commands
 
 ### Backend
 
-| コマンド | 説明 |
+| Command | Description |
 |---|---|
-| `make install` | Python 依存関係インストール |
-| `make dev` | 開発用依存関係をインストール |
-| `make run` | バックエンド起動 (port 8000) |
-| `make test` | テスト全実行 |
-| `make test-unit` | ユニットテストのみ |
-| `make test-integration` | 結合テストのみ（PostgreSQL 必要） |
-| `make test-cov` | カバレッジ付きテスト |
+| `make install` | Install Python dependencies |
+| `make dev` | Install with dev dependencies |
+| `make run` | Start backend (port 8000) |
+| `make test` | Run all tests |
+| `make test-unit` | Unit tests only |
+| `make test-integration` | Integration tests (PostgreSQL required) |
+| `make test-cov` | Tests with coverage report |
 | `make lint` | ruff + mypy |
-| `make format` | コード整形 |
-| `make check` | lint + test 一括 |
+| `make format` | Auto-format code |
+| `make format-check` | Check formatting (CI mode) |
+| `make check` | lint + test |
 
 ### Frontend
 
-| コマンド | 説明 |
+| Command | Description |
 |---|---|
 | `make front-install` | npm install |
-| `make front-dev` | Vite dev server 起動 (port 1420) |
-| `make front-build` | プロダクションビルド |
-| `make front-tauri` | Tauri デスクトップアプリ起動 |
+| `make front-dev` | Vite dev server (port 1420) |
+| `make front-build` | Production build |
+| `make front-lint` | TypeScript type check |
+| `make front-tauri` | Tauri desktop app |
 
-### All-in-one
+### Database
 
-| コマンド | 説明 |
+| Command | Description |
 |---|---|
-| `make up` | バックエンド + フロントエンドを一括起動 |
+| `make db-up` | Start PostgreSQL (pgvector) |
+| `make db-down` | Stop containers |
+| `make db-reset` | Destroy volume and restart |
 
-## 使い方
+### CI
 
-### メモを作成
-
-```bash
-curl -X POST http://localhost:8000/memos \
-  -H "Content-Type: application/json" \
-  -d '{"content": "今日のミーティングでAWS移行の方針が決まった"}'
-```
-
-レスポンス例:
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "content": "今日のミーティングでAWS移行の方針が決まった",
-  "summary": "AWS移行方針がミーティングで決定した",
-  "tags": ["AWS", "インフラ", "ミーティング"],
-  "created_at": "2026-02-18T12:00:00"
-}
-```
-
-### メモ一覧を取得
-
-```bash
-curl http://localhost:8000/memos
-```
-
-### メモを検索（AI セマンティック検索）
-
-```bash
-curl -X POST http://localhost:8000/memos/search \
-  -H "Content-Type: application/json" \
-  -d '{"query": "インフラ関連の決定事項は？"}'
-```
-
-## データ保存
-
-| モード | 条件 | 永続性 |
-|---|---|---|
-| PostgreSQL | `DATABASE_URL` が設定されている（Docker デフォルト） | サーバー再起動後も保持 |
-| InMemory | `DATABASE_URL` が未設定 | サーバー再起動で消える |
-
-## 技術スタック
-
-| 層 | 技術 |
+| Command | Description |
 |---|---|
-| Backend | Python 3.12 / FastAPI / SQLAlchemy / PostgreSQL |
-| AI | Anthropic Claude API |
-| Frontend | React 19 / TypeScript / Vite / Tailwind CSS v4 |
-| Desktop | Tauri v2 |
-| テスト | pytest (30 tests / unit + integration) |
-| 品質管理 | ruff / mypy |
-| パッケージ管理 | uv (Backend) / npm (Frontend) |
+| `make ci-quick` | lint + unit tests + frontend type check |
+| `make ci` | Full CI (lint + all tests + frontend build) |
 
-## 現在の制限事項
+## Roadmap
 
-- **検索は全メモを AI に送信** — メモ数が増えるとコスト・レイテンシが増加
-
-## ロードマップ
-
-- **Phase 1 (MVP)**: InMemory 保存 + Claude AI 解析 + セマンティック検索
-- **Phase 2**: PostgreSQL 永続化 + Docker 構成
-- **Phase 3**: オニオンアーキテクチャ + Tauri フロントエンド (FSD) ← **現在**
-- **Phase 4**: ベクトル検索（Embeddings）
+- **Phase 1** — Basic CRUD + AI summarization + semantic search ✅
+- **Phase 2** — Vector similarity search (sentence-transformers / pgvector) ✅
+- **Phase 3** — Knowledge graph UI (React Flow / D3.js)
+- **Phase 4** — AI knowledge gap detection
+- **Phase 5** — 3D constellation UI (Three.js)
