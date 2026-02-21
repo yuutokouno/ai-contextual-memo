@@ -27,3 +27,22 @@ class SearchRequest(BaseModel):
 class SearchResponse(BaseModel):
     answer: str
     related_memo_ids: list[str] = Field(default_factory=list)
+
+
+class GraphNodeResponse(BaseModel):
+    id: str
+    label: str
+    content: str
+    tags: list[str] = Field(default_factory=list)
+    created_at: datetime
+
+
+class GraphEdgeResponse(BaseModel):
+    source: str
+    target: str
+    similarity: float
+
+
+class GraphResponse(BaseModel):
+    nodes: list[GraphNodeResponse] = Field(default_factory=list)
+    edges: list[GraphEdgeResponse] = Field(default_factory=list)

@@ -7,6 +7,9 @@ from app.application.memo.memo_usecase import MemoUsecase
 from app.di.memo import container
 from app.presentation.memo.schemas.memo_schemas import (
     CreateMemoRequest,
+    GraphEdgeResponse,
+    GraphNodeResponse,
+    GraphResponse,
     MemoResponse,
     SearchRequest,
     SearchResponse,
@@ -64,6 +67,29 @@ def get_memos(
         )
         for m in memos
     ]
+
+
+@app.get("/memos/graph", response_model=GraphResponse)
+def get_graph(
+    usecase: MemoUsecase = Depends(get_memo_usecase),
+) -> GraphResponse:
+    graph = usecase.get_graph_data()
+    return GraphResponse(
+        nodes=[
+            GraphNodeResponse(
+                id=n.id,
+                label=n.label,
+                content=n.content,
+                tags=n.tags,
+                created_at=n.created_at,
+            )
+            for n in graph.nodes
+        ],
+        edges=[
+            GraphEdgeResponse(source=e.source, target=e.target, similarity=e.similarity)
+            for e in graph.edges
+        ],
+    )
 
 
 @app.patch("/memos/{memo_id}", response_model=MemoResponse)
