@@ -1,1 +1,1 @@
-export { useGraphData } from "./graph-data";
+export { useGraphData, useGraph3DData } from "./graph-data";

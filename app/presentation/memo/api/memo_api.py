@@ -5,12 +5,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.application.memo.memo_usecase import MemoUsecase
 from app.di.memo import container
+from app.infrastructure.memo.external.pca_reducer import reduce_to_3d
 from app.presentation.memo.schemas.memo_schemas import (
     CreateMemoRequest,
+    Graph3DNodeResponse,
+    Graph3DResponse,
     GraphEdgeResponse,
     GraphNodeResponse,
     GraphResponse,
     MemoResponse,
+    Position3DResponse,
     SearchRequest,
     SearchResponse,
     UpdateMemoRequest,
@@ -82,6 +86,34 @@ def get_graph(
                 content=n.content,
                 tags=n.tags,
                 created_at=n.created_at,
+            )
+            for n in graph.nodes
+        ],
+        edges=[
+            GraphEdgeResponse(source=e.source, target=e.target, similarity=e.similarity)
+            for e in graph.edges
+        ],
+    )
+
+
+@app.get("/memos/graph/3d", response_model=Graph3DResponse)
+def get_graph_3d(
+    usecase: MemoUsecase = Depends(get_memo_usecase),
+) -> Graph3DResponse:
+    graph = usecase.get_graph_3d_data(reduce_fn=reduce_to_3d)
+    return Graph3DResponse(
+        nodes=[
+            Graph3DNodeResponse(
+                id=n.id,
+                label=n.label,
+                content=n.content,
+                tags=n.tags,
+                created_at=n.created_at,
+                position=Position3DResponse(
+                    x=n.position.x,
+                    y=n.position.y,
+                    z=n.position.z,
+                ),
             )
             for n in graph.nodes
         ],
