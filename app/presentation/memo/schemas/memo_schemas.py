@@ -46,3 +46,23 @@ class GraphEdgeResponse(BaseModel):
 class GraphResponse(BaseModel):
     nodes: list[GraphNodeResponse] = Field(default_factory=list)
     edges: list[GraphEdgeResponse] = Field(default_factory=list)
+
+
+class Position3DResponse(BaseModel):
+    x: float
+    y: float
+    z: float
+
+
+class Graph3DNodeResponse(BaseModel):
+    id: str
+    label: str
+    content: str
+    tags: list[str] = Field(default_factory=list)
+    created_at: datetime
+    position: Position3DResponse
+
+
+class Graph3DResponse(BaseModel):
+    nodes: list[Graph3DNodeResponse] = Field(default_factory=list)
+    edges: list[GraphEdgeResponse] = Field(default_factory=list)

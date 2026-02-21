@@ -1,5 +1,6 @@
 import logging
 import os
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from uuid import UUID
@@ -34,6 +35,29 @@ class GraphEdge:
 @dataclass
 class GraphData:
     nodes: list[GraphNode] = field(default_factory=list)
+    edges: list[GraphEdge] = field(default_factory=list)
+
+
+@dataclass
+class Position3D:
+    x: float
+    y: float
+    z: float
+
+
+@dataclass
+class Graph3DNode:
+    id: str
+    label: str
+    content: str
+    created_at: datetime
+    position: Position3D
+    tags: list[str] = field(default_factory=list)
+
+
+@dataclass
+class Graph3DData:
+    nodes: list[Graph3DNode] = field(default_factory=list)
     edges: list[GraphEdge] = field(default_factory=list)
 
 
@@ -102,9 +126,34 @@ class MemoUsecase:
 
         return self._ai_client.search_memos(query, relevant_memos)
 
+    def _get_threshold(self, threshold: float | None) -> float:
+        if threshold is not None:
+            return threshold
+        return float(os.environ.get("GRAPH_SIMILARITY_THRESHOLD", "0.7"))
+
+    @staticmethod
+    def _compute_edges(
+        memos: list[Memo],
+        threshold: float,
+    ) -> list[GraphEdge]:
+        edges: list[GraphEdge] = []
+        for i, memo_a in enumerate(memos):
+            for memo_b in memos[i + 1 :]:
+                assert memo_a.embedding is not None  # noqa: S101
+                assert memo_b.embedding is not None  # noqa: S101
+                sim = cosine_similarity(memo_a.embedding, memo_b.embedding)
+                if sim >= threshold:
+                    edges.append(
+                        GraphEdge(
+                            source=str(memo_a.id),
+                            target=str(memo_b.id),
+                            similarity=round(sim, 4),
+                        )
+                    )
+        return edges
+
     def get_graph_data(self, threshold: float | None = None) -> GraphData:
-        if threshold is None:
-            threshold = float(os.environ.get("GRAPH_SIMILARITY_THRESHOLD", "0.7"))
+        resolved_threshold = self._get_threshold(threshold)
 
         all_memos = self._repository.get_all()
         memos_with_embedding = [m for m in all_memos if m.embedding is not None]
@@ -120,19 +169,41 @@ class MemoUsecase:
             for m in memos_with_embedding
         ]
 
-        edges: list[GraphEdge] = []
-        for i, memo_a in enumerate(memos_with_embedding):
-            for memo_b in memos_with_embedding[i + 1 :]:
-                assert memo_a.embedding is not None  # noqa: S101
-                assert memo_b.embedding is not None  # noqa: S101
-                sim = cosine_similarity(memo_a.embedding, memo_b.embedding)
-                if sim >= threshold:
-                    edges.append(
-                        GraphEdge(
-                            source=str(memo_a.id),
-                            target=str(memo_b.id),
-                            similarity=round(sim, 4),
-                        )
-                    )
-
+        edges = self._compute_edges(memos_with_embedding, resolved_threshold)
         return GraphData(nodes=nodes, edges=edges)
+
+    def get_graph_3d_data(
+        self,
+        reduce_fn: Callable[[list[list[float]]], list[dict[str, float]]],
+        threshold: float | None = None,
+    ) -> Graph3DData:
+        resolved_threshold = self._get_threshold(threshold)
+
+        all_memos = self._repository.get_all()
+        memos_with_embedding = [m for m in all_memos if m.embedding is not None]
+
+        if not memos_with_embedding:
+            return Graph3DData()
+
+        embeddings = [m.embedding for m in memos_with_embedding]
+        # Type narrowing: embeddings are guaranteed non-None by the filter above
+        positions = reduce_fn([e for e in embeddings if e is not None])
+
+        nodes = [
+            Graph3DNode(
+                id=str(m.id),
+                label=m.summary if m.summary else m.content[:_MAX_LABEL_LENGTH],
+                content=m.content,
+                created_at=m.created_at,
+                tags=m.tags,
+                position=Position3D(
+                    x=pos["x"],
+                    y=pos["y"],
+                    z=pos["z"],
+                ),
+            )
+            for m, pos in zip(memos_with_embedding, positions, strict=True)
+        ]
+
+        edges = self._compute_edges(memos_with_embedding, resolved_threshold)
+        return Graph3DData(nodes=nodes, edges=edges)
