@@ -1,7 +1,9 @@
 export type GraphNode = {
   id: string;
   label: string;
+  content: string;
   tags: string[];
+  created_at: string;
 };
 
 export type GraphEdge = {

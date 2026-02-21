@@ -76,7 +76,14 @@ def get_graph(
     graph = usecase.get_graph_data()
     return GraphResponse(
         nodes=[
-            GraphNodeResponse(id=n.id, label=n.label, tags=n.tags) for n in graph.nodes
+            GraphNodeResponse(
+                id=n.id,
+                label=n.label,
+                content=n.content,
+                tags=n.tags,
+                created_at=n.created_at,
+            )
+            for n in graph.nodes
         ],
         edges=[
             GraphEdgeResponse(source=e.source, target=e.target, similarity=e.similarity)

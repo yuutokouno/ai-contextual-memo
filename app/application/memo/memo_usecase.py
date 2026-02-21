@@ -1,6 +1,7 @@
 import logging
 import os
 from dataclasses import dataclass, field
+from datetime import datetime
 from uuid import UUID
 
 from app.domain.memo.entities.memo import Memo
@@ -18,6 +19,8 @@ _MAX_LABEL_LENGTH = 30
 class GraphNode:
     id: str
     label: str
+    content: str
+    created_at: datetime
     tags: list[str] = field(default_factory=list)
 
 
@@ -110,6 +113,8 @@ class MemoUsecase:
             GraphNode(
                 id=str(m.id),
                 label=m.summary if m.summary else m.content[:_MAX_LABEL_LENGTH],
+                content=m.content,
+                created_at=m.created_at,
                 tags=m.tags,
             )
             for m in memos_with_embedding

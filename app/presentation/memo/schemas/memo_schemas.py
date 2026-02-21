@@ -32,7 +32,9 @@ class SearchResponse(BaseModel):
 class GraphNodeResponse(BaseModel):
     id: str
     label: str
+    content: str
     tags: list[str] = Field(default_factory=list)
+    created_at: datetime
 
 
 class GraphEdgeResponse(BaseModel):
